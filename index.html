@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Campus Cart Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            width: 200px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .form-box {
+            background: white;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:first-child {
+            background-color: red;
+            color: white;
+        }
+
+        button:last-child {
+            background-color: blue;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #333;
+            color: white;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🛒 Campus Cart Dashboard</h1>
+
+<div id="revenue" class="card">Loading Revenue...</div>
+<div id="lowStock" class="card">Loading Low Stock...</div>
+
+<!-- 🔥 ADD PRODUCT FORM -->
+<div class="form-box">
+    <h3>Add Product</h3>
+    <input id="name" placeholder="Name">
+    <input id="price" placeholder="Price">
+    <input id="stock" placeholder="Stock">
+    <button onclick="addProduct()">Add</button>
+</div>
+
+<h2>🏆 Top Products</h2>
+<table id="topProducts">
+    <tr>
+        <th>Name</th>
+        <th>Total Sold</th>
+    </tr>
+</table>
+
+<h2>📦 All Products</h2>
+<table id="products">
+    <tr>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Actions</th>
+    </tr>
+</table>
+
+<script>
+
+// 💰 Revenue
+fetch('http://localhost:3000/revenue')
+.then(res => res.json())
+.then(data => {
+    document.getElementById('revenue').innerHTML =
+        "💰 Revenue: ₹" + (data[0].revenue || 0);
+});
+
+// ⚠️ Low Stock
+fetch('http://localhost:3000/low-stock')
+.then(res => res.json())
+.then(data => {
+    document.getElementById('lowStock').innerHTML =
+        "⚠️ Low Stock Items: " + data.length;
+});
+
+// 🏆 Top Products
+fetch('http://localhost:3000/top-products')
+.then(res => res.json())
+.then(data => {
+    let table = document.getElementById('topProducts');
+
+    data.forEach(item => {
+        let row = `<tr>
+            <td>${item.name}</td>
+            <td>${item.total_sold}</td>
+        </tr>`;
+        table.innerHTML += row;
+    });
+});
+
+// 📦 Products
+fetch('http://localhost:3000/products')
+.then(res => res.json())
+.then(data => {
+    let table = document.getElementById('products');
+
+    data.forEach(item => {
+        let row = `
+        <tr style="${item.stock < 10 ? 'background-color:#ffe6e6;' : ''}">
+            <td>${item.name}</td>
+            <td>₹${item.price}</td>
+            <td style="color:${item.stock < 10 ? 'red' : 'black'}; font-weight:bold;">
+                ${item.stock} ${item.stock < 10 ? '⚠️' : ''}
+            </td>
+            <td>
+                <button onclick="deleteProduct(${item.id})">Delete</button>
+                <button onclick="editProduct(${item.id})">Edit</button>
+            </td>
+        </tr>`;
+        table.innerHTML += row;
+    });
+});
+
+// ➕ ADD PRODUCT FUNCTION
+function addProduct() {
+    const name = document.getElementById('name').value;
+    const price = document.getElementById('price').value;
+    const stock = document.getElementById('stock').value;
+
+    fetch('http://localhost:3000/add-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, price, stock })
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert(msg);
+        location.reload();
+    });
+}
+
+// 🗑️ DELETE
+function deleteProduct(id) {
+    fetch(`http://localhost:3000/delete-product/${id}`, {
+        method: 'DELETE'
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert(msg);
+        location.reload();
+    });
+}
+
+// ✏️ EDIT
+function editProduct(id) {
+    let newPrice = prompt("Enter new price:");
+
+    fetch(`http://localhost:3000/update-product/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price: newPrice })
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert(msg);
+        location.reload();
+    });
+}
+
+</script>
+
+</body>
+</html>
